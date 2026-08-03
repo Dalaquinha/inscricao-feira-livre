@@ -1,21 +1,23 @@
 // netlify/functions/inscricao.js
 //
 // Recebe a inscrição enviada pelo formulário, e:
-//   1) valida o token do reCAPTCHA v3 junto ao Google
-//   2) valida o CPF novamente no servidor (nunca confiar só no navegador)
-//   3) grava a inscrição no Supabase e gera o protocolo (ex.: FEIRA-2026-004582)
-//   4) envia e-mail de confirmação ao inscrito e um aviso interno à Prefeitura
+// 1) valida o token do reCAPTCHA v3 junto ao Google
+// 2) valida o CPF novamente no servidor (nunca confiar só no navegador)
+// 3) grava a inscrição no Supabase e gera o protocolo (ex.: FEIRA-2026-004582)
+// 4) envia e-mail de confirmação ao inscrito e um aviso interno à Prefeitura
 //
 // Variáveis de ambiente necessárias (configure em Netlify > Site settings > Environment variables):
-//   SUPABASE_URL                 - URL do projeto Supabase
-//   SUPABASE_SERVICE_ROLE_KEY    - service role key do Supabase (NUNCA a anon key)
-//   RECAPTCHA_SECRET_KEY         - secret key do reCAPTCHA v3
-//   RECAPTCHA_MIN_SCORE          - opcional, padrão 0.5
-//   RESEND_API_KEY               - api key do serviço de e-mail (resend.com)
-//   EMAIL_REMETENTE              - ex.: "Feira Livre de Blumenau <feira@seudominio.com.br>"
-//   EMAIL_PREFEITURA_INTERNO     - e-mail interno que recebe o aviso de nova inscrição
+// SUPABASE_URL - URL do projeto Supabase
+// SUPABASE_SERVICE_ROLE_KEY - service role key do Supabase (NUNCA a anon key)
+// RECAPTCHA_SECRET_KEY - secret key do reCAPTCHA v3
+// RECAPTCHA_MIN_SCORE - opcional, padrão 0.5
+// GMAIL_USER - conta Gmail usada para enviar os e-mails
+// GMAIL_APP_PASSWORD - senha de app gerada na conta Gmail (não é a senha normal)
+// EMAIL_REMETENTE - ex.: "Feira Livre de Blumenau <feiralivreblumenau@gmail.com>"
+// EMAIL_PREFEITURA_INTERNO - e-mail interno que recebe o aviso de nova inscrição
 
 const { createClient } = require('@supabase/supabase-js');
+const nodemailer = require('nodemailer');
 
 const RECAPTCHA_MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE || '0.5');
 
@@ -28,16 +30,20 @@ function validarCPF(cpfSujo) {
   const cpf = onlyDigits(cpfSujo);
   if (cpf.length !== 11) return false;
   if (/^(\d)\1{10}$/.test(cpf)) return false;
+
   const calcDigito = (base, pesoInicial) => {
     let soma = 0;
     for (let i = 0; i < base.length; i++) soma += parseInt(base[i], 10) * (pesoInicial - i);
     const resto = (soma * 10) % 11;
     return resto === 10 ? 0 : resto;
   };
+
   const d1 = calcDigito(cpf.slice(0, 9), 10);
   if (d1 !== parseInt(cpf[9], 10)) return false;
+
   const d2 = calcDigito(cpf.slice(0, 10), 11);
   if (d2 !== parseInt(cpf[10], 10)) return false;
+
   return true;
 }
 
@@ -89,30 +95,39 @@ function origemProdutosTexto(d) {
   return `Misto — própria: ${d.producaoPropria || '—'} | terceiros: ${d.producaoTerceiros || '—'}`;
 }
 
+// ---------- envio de e-mail via Gmail (nodemailer) ----------
+let transporter; // reaproveita a conexão entre chamadas (dentro do mesmo container)
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD
+      }
+    });
+  }
+  return transporter;
+}
+
 async function enviarEmail({ to, subject, html }) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY não configurada — e-mail não enviado para', to);
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn('GMAIL_USER/GMAIL_APP_PASSWORD não configurados — e-mail não enviado para', to);
     return { enviado: false };
   }
-  const resp = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_REMETENTE || 'Feira Livre <onboarding@resend.dev>',
-      to: [to],
+  try {
+    await getTransporter().sendMail({
+      from: process.env.EMAIL_REMETENTE || `Feira Livre de Blumenau <${process.env.GMAIL_USER}>`,
+      to,
       subject,
       html
-    })
-  });
-  if (!resp.ok) {
-    const texto = await resp.text();
-    console.error('Falha ao enviar e-mail para', to, texto);
+    });
+    return { enviado: true };
+  } catch (e) {
+    console.error('Falha ao enviar e-mail para', to, e.message);
     return { enviado: false };
   }
-  return { enviado: true };
 }
 
 exports.handler = async (event, context) => {
