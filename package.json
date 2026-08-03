@@ -1,8 +1,8 @@
 {
-  "name": "inscricao-feira-livre-blumenau",
-  "private": true,
+  "name": "inscricao-feira-livre",
   "version": "1.0.0",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.4"
+    "@supabase/supabase-js": "^2.45.4",
+    "nodemailer": "^6.9.13"
   }
 }
