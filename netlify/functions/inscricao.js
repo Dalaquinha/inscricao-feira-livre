@@ -430,3 +430,4 @@ exports.handler = async (event, context) => {
     body: JSON.stringify({ ok: true, protocolo, data: dataBR, hora: horaBR })
   };
 };
+
