@@ -97,7 +97,9 @@ function origemProdutosTexto(d) {
   return `Misto — própria: ${d.producaoPropria || '—'} | terceiros: ${d.producaoTerceiros || '—'}`;
 }
 
-// ---------- e-mail COMPLETO em HTML, formatado em linhas (sem logo por enquanto) ----------
+// ---------- e-mail COMPLETO em HTML, formatado em linhas, com a logo no cabeçalho ----------
+const LOGO_URL = 'https://inscricaofeiralivremunicipal.netlify.app/logo-semmas.png';
+
 function montarEmailCompletoHtml(d) {
   const linha = (label, valor) => `<p style="margin:0 0 6px;"><strong>${label}:</strong> ${valor || '—'}</p>`;
   const secao = (titulo) => `
@@ -107,6 +109,7 @@ function montarEmailCompletoHtml(d) {
 
   return `
   <div style="font-family:Arial, sans-serif; font-size:14px; color:#222; max-width:640px;">
+    <img src="${LOGO_URL}" alt="SEMMAS - Prefeitura de Blumenau" style="max-width:100%;height:auto;display:block;margin:0 0 14px;">
     <h2 style="margin:0 0 4px;">NOVA INSCRIÇÃO — FEIRA LIVRE MUNICIPAL</h2>
     <p style="margin:0 0 14px;color:#555;font-size:13px;">
       Protocolo: <strong>${d.protocolo}</strong> &nbsp;|&nbsp; Data: ${d.dataBR} às ${d.horaBR}
