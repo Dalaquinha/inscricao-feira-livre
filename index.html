@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inscrição · Feira Livre de Blumenau</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<!-- reCAPTCHA v3: troque 6LcGOm8tAAAAAIVKNPZwL9AiK1g9KpVPsbzWI9Y8 pela Site Key gerada em https://www.google.com/recaptcha/admin -->
-<script src="https://www.google.com/recaptcha/api.js?render=6LcGOm8tAAAAAIVKNPZwL9AiK1g9KpVPsbzWI9Y8"></script>
+<!-- reCAPTCHA v3: troque SUA_SITE_KEY_AQUI pela Site Key gerada em https://www.google.com/recaptcha/admin -->
+<script src="https://www.google.com/recaptcha/api.js?render=SUA_SITE_KEY_AQUI"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
 
@@ -319,6 +319,11 @@ footer{text-align:center; padding:26px 20px 0; color:var(--ink-soft); font-size:
       <h2>Onde você mora</h2>
       <div class="grid g4">
         <div class="field">
+          <label for="cep">CEP<span class="req">*</span></label>
+          <input type="text" id="cep" inputmode="numeric" placeholder="89000-000" required>
+          <span class="field-msg" id="cepMsg"></span>
+        </div>
+        <div class="field">
           <label for="rua">Rua<span class="req">*</span></label>
           <input type="text" id="rua" required>
         </div>
@@ -329,11 +334,6 @@ footer{text-align:center; padding:26px 20px 0; color:var(--ink-soft); font-size:
         <div class="field">
           <label for="bairro">Bairro<span class="req">*</span></label>
           <input type="text" id="bairro" required>
-        </div>
-        <div class="field">
-          <label for="cep">CEP<span class="req">*</span></label>
-          <input type="text" id="cep" inputmode="numeric" placeholder="89000-000" required>
-          <span class="field-msg" id="cepMsg"></span>
         </div>
       </div>
       <div class="field">
@@ -457,7 +457,7 @@ const $ = (id) => document.getElementById(id);
 // O envio de e-mail (confirmação + aviso interno) e a gravação da inscrição
 // agora acontecem no backend (Netlify Function), não mais no navegador.
 // =====================================================================
-const RECAPTCHA_SITE_KEY = '6LcGOm8tAAAAAIVKNPZwL9AiK1g9KpVPsbzWI9Y8';
+const RECAPTCHA_SITE_KEY = 'SUA_SITE_KEY_AQUI';
 const API_INSCRICAO = '/.netlify/functions/inscricao';
 const RECAPTCHA_CONFIGURADO = RECAPTCHA_SITE_KEY !== 'SUA_SITE_KEY_AQUI';
 // =====================================================================
