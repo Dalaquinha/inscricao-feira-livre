@@ -216,6 +216,7 @@ exports.handler = async (event, context) => {
   try {
     const recaptcha = await verificarRecaptcha(body.recaptchaToken, ip);
     if (!recaptcha.ok) {
+      console.warn('reCAPTCHA recusado —', 'motivo:', recaptcha.motivo || 'não informado', '| score:', recaptcha.score);
       return { statusCode: 400, body: JSON.stringify({ ok: false, erro: 'Falha na verificação de segurança (reCAPTCHA). Tente novamente.' }) };
     }
   } catch (e) {
