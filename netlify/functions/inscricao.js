@@ -101,7 +101,7 @@ function origemProdutosTexto(d) {
 // A logo vai embutida no e-mail (anexo com Content-ID), em vez de referenciada por URL:
 // assim ela aparece mesmo que o domínio do Netlify mude ou o cliente de e-mail bloqueie
 // imagens remotas. Fonte: mesma imagem em base64 usada no PDF gerado pelo formulário.
-const LOGO_BASE64 = require('./logo-semmas.base64.js');
+const LOGO_BASE64 = require('./lib/logo-semmas-base64.js');
 const LOGO_BUFFER = Buffer.from(LOGO_BASE64.replace(/^data:image\/png;base64,/, ''), 'base64');
 const LOGO_CID = 'logo-semmas';
 
