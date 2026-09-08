@@ -1,16 +1,17 @@
 # Configuração — Inscrição Feira Livre de Blumenau
 
 Arquitetura: **HTML estático (Netlify)** + **Netlify Functions** (backend) +
-**Supabase** (banco) + **Google reCAPTCHA v3** + **ViaCEP** + **Resend** (e-mail).
+**Supabase** (banco) + **Google reCAPTCHA v3** + **ViaCEP** + **Gmail via nodemailer** (e-mail).
 
 ## Arquivos deste pacote
 
 ```
-inscricao_feira_livre.html      → formulário (sobe na raiz do site)
-netlify/functions/inscricao.js  → function que valida, grava, gera protocolo e envia e-mails
-supabase-schema.sql             → schema do banco (rodar uma vez no Supabase)
-netlify.toml                    → configuração do Netlify
-package.json                    → dependência (@supabase/supabase-js)
+index.html                            → formulário (sobe na raiz do site)
+netlify/functions/inscricao.js        → function que valida, grava, gera protocolo e envia e-mails
+netlify/functions/logo-semmas.base64.js → logo em base64, anexada (Content-ID) no e-mail interno
+supabase-schema.sql                   → schema do banco (rodar uma vez no Supabase)
+netlify.toml                          → configuração do Netlify
+package.json                          → dependências (@supabase/supabase-js, nodemailer)
 ```
 
 ## 1) Supabase
@@ -32,16 +33,24 @@ A `service_role` key só é usada dentro da Netlify Function (nunca no navegador
 3. Copie a **Secret Key** → variável de ambiente `RECAPTCHA_SECRET_KEY`.
 4. Opcional: `RECAPTCHA_MIN_SCORE` (padrão `0.5`) define a pontuação mínima aceita.
 
-## 3) E-mail (Resend)
+## 3) E-mail (Gmail via nodemailer)
 
-1. Crie uma conta gratuita em https://resend.com.
-2. Verifique um domínio (ou use o domínio de testes `onboarding@resend.dev` enquanto testa).
-3. Gere uma API key → variável `RESEND_API_KEY`.
-4. Defina `EMAIL_REMETENTE`, ex.: `Feira Livre de Blumenau <feira@seudominio.com.br>`.
-5. Defina `EMAIL_PREFEITURA_INTERNO` com o e-mail que deve receber o aviso interno de cada nova inscrição.
+1. Use (ou crie) uma conta Gmail dedicada para o envio, ex.: `feiralivreproeb@gmail.com`.
+2. Ative a verificação em duas etapas nessa conta e gere uma **senha de app**
+   (Conta Google > Segurança > Senhas de app) — não é a senha normal de login.
+3. Defina as variáveis de ambiente:
+   - `GMAIL_USER` → o e-mail da conta (ex.: `feiralivreproeb@gmail.com`)
+   - `GMAIL_APP_PASSWORD` → a senha de app gerada
+   - `EMAIL_REMETENTE` → ex.: `Feira Livre de Blumenau <feiralivreproeb@gmail.com>`
+   - `EMAIL_PREFEITURA_INTERNO` → e-mail institucional que recebe cópia do e-mail completo (ex.: `incra.semmas@blumenau.sc.gov.br`)
 
-> Pode trocar o Resend por outro provedor (SendGrid, Postmark etc.) editando só a função
-> `enviarEmail()` em `netlify/functions/inscricao.js` — o restante do fluxo não muda.
+A logo do cabeçalho do e-mail interno vai embutida como anexo (Content-ID), a partir de
+`netlify/functions/logo-semmas.base64.js` — não depende de nenhuma URL pública, então
+continua aparecendo mesmo que o domínio do site mude.
+
+> Pode trocar o Gmail por outro provedor (Resend, SendGrid, Postmark etc.) editando só a
+> função `enviarEmail()` e o `getTransporter()` em `netlify/functions/inscricao.js` —
+> o restante do fluxo não muda.
 
 ## 4) Variáveis de ambiente no Netlify
 
@@ -53,7 +62,8 @@ Em **Site settings > Environment variables**, cadastre:
 | `SUPABASE_SERVICE_ROLE_KEY` | service role key do Supabase |
 | `RECAPTCHA_SECRET_KEY` | secret key do reCAPTCHA v3 |
 | `RECAPTCHA_MIN_SCORE` | opcional, padrão `0.5` |
-| `RESEND_API_KEY` | api key do Resend |
+| `GMAIL_USER` | conta Gmail usada para enviar (ex.: `feiralivreproeb@gmail.com`) |
+| `GMAIL_APP_PASSWORD` | senha de app gerada na conta Gmail (não é a senha normal) |
 | `EMAIL_REMETENTE` | remetente das confirmações |
 | `EMAIL_PREFEITURA_INTERNO` | e-mail interno que recebe o aviso de nova inscrição |
 
@@ -62,7 +72,9 @@ Em **Site settings > Environment variables**, cadastre:
 - Suba a pasta inteira (incluindo `netlify/`, `netlify.toml` e `package.json`) para um
   repositório Git conectado ao Netlify, ou arraste a pasta no **Netlify Drop**
   (nesse caso configure as functions manualmente em Site settings).
-- O Netlify instala `@supabase/supabase-js` automaticamente a partir do `package.json`.
+- O Netlify instala `@supabase/supabase-js` e `nodemailer` automaticamente a partir do
+  `package.json` — sem esse arquivo, a function falha ao ser publicada e o formulário
+  não envia (fica "carregando" para sempre ou retorna erro).
 
 ## Fluxo implementado
 

@@ -2,8 +2,9 @@
   "name": "inscricao-feira-livre",
   "version": "1.0.0",
   "private": true,
+  "description": "Formulário de inscrição da Feira Livre Municipal de Blumenau (SEMMAS) — front-end estático + Netlify Function.",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@supabase/supabase-js": "^2.45.4",
     "nodemailer": "^6.9.14"
   }
 }

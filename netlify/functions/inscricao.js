@@ -98,7 +98,12 @@ function origemProdutosTexto(d) {
 }
 
 // ---------- e-mail COMPLETO em HTML, formatado em linhas, com a logo no cabeçalho ----------
-const LOGO_URL = 'https://inscricaofeiralivremunicipal.netlify.app/logo-semmas.png';
+// A logo vai embutida no e-mail (anexo com Content-ID), em vez de referenciada por URL:
+// assim ela aparece mesmo que o domínio do Netlify mude ou o cliente de e-mail bloqueie
+// imagens remotas. Fonte: mesma imagem em base64 usada no PDF gerado pelo formulário.
+const LOGO_BASE64 = require('./logo-semmas.base64.js');
+const LOGO_BUFFER = Buffer.from(LOGO_BASE64.replace(/^data:image\/png;base64,/, ''), 'base64');
+const LOGO_CID = 'logo-semmas';
 
 function montarEmailCompletoHtml(d) {
   const linha = (label, valor) => `<p style="margin:0 0 6px;"><strong>${label}:</strong> ${valor || '—'}</p>`;
@@ -109,7 +114,7 @@ function montarEmailCompletoHtml(d) {
 
   return `
   <div style="font-family:Arial, sans-serif; font-size:14px; color:#222; max-width:640px;">
-    <img src="${LOGO_URL}" alt="SEMMAS - Prefeitura de Blumenau" style="max-width:100%;height:auto;display:block;margin:0 0 14px;">
+    <img src="cid:${LOGO_CID}" alt="SEMMAS - Prefeitura de Blumenau" style="max-width:100%;height:auto;display:block;margin:0 0 14px;">
     <h2 style="margin:0 0 4px;">NOVA INSCRIÇÃO — FEIRA LIVRE MUNICIPAL</h2>
     <p style="margin:0 0 14px;color:#555;font-size:13px;">
       Protocolo: <strong>${d.protocolo}</strong> &nbsp;|&nbsp; Data: ${d.dataBR} às ${d.horaBR}
@@ -170,7 +175,7 @@ function getTransporter() {
   return transporter;
 }
 
-async function enviarEmail({ to, subject, html }) {
+async function enviarEmail({ to, subject, html, attachments }) {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
     console.warn('GMAIL_USER/GMAIL_APP_PASSWORD não configurados — e-mail não enviado para', to);
     return { enviado: false };
@@ -180,7 +185,8 @@ async function enviarEmail({ to, subject, html }) {
       from: process.env.EMAIL_REMETENTE || `Feira Livre de Blumenau <${process.env.GMAIL_USER}>`,
       to,
       subject,
-      html
+      html,
+      attachments
     });
     return { enviado: true };
   } catch (e) {
@@ -328,7 +334,10 @@ exports.handler = async (event, context) => {
     ? enviarEmail({
         to: destinatariosInternos,
         subject: `Nova inscrição recebida — ${protocolo}`,
-        html: htmlCompleto
+        html: htmlCompleto,
+        attachments: [
+          { filename: 'logo-semmas.png', content: LOGO_BUFFER, cid: LOGO_CID }
+        ]
       })
     : Promise.resolve({ enviado: false });
 

@@ -655,12 +655,20 @@ $('feiraForm').addEventListener('submit', async (e)=>{
     // reCAPTCHA v3: gera um token silencioso (não interrompe o usuário)
     let recaptchaToken = '';
     if(RECAPTCHA_CONFIGURADO && window.grecaptcha){
-      recaptchaToken = await new Promise((resolve, reject)=>{
-        grecaptcha.ready(()=>{
-          grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'inscricao_feira' })
-            .then(resolve).catch(reject);
-        });
-      });
+      // Timeout de segurança: se o script do reCAPTCHA não terminar de carregar
+      // (bloqueio de rede, extensão do navegador, domínio não autorizado, etc.),
+      // grecaptcha.ready() pode nunca chamar o callback. Sem esse limite, o botão
+      // "Enviando..." travaria para sempre. Depois de 6s, segue sem o token —
+      // o servidor já trata token ausente como falha controlada, não como erro fatal.
+      recaptchaToken = await Promise.race([
+        new Promise((resolve, reject)=>{
+          grecaptcha.ready(()=>{
+            grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'inscricao_feira' })
+              .then(resolve).catch(reject);
+          });
+        }),
+        new Promise((_, reject)=> setTimeout(()=> reject(new Error('reCAPTCHA demorou demais')), 6000))
+      ]).catch(()=> '');
     }
 
     const resp = await fetch(API_INSCRICAO, {
