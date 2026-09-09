@@ -1,0 +1,23 @@
+name: Manter Supabase ativo
+
+# Faz uma consulta leve ao banco a cada 3 dias para evitar que o projeto
+# gratuito do Supabase seja pausado automaticamente por inatividade (7 dias
+# sem requisições). Também pode ser disparado manualmente pela aba "Actions".
+on:
+  schedule:
+    - cron: '0 8 */3 * *'   # todo dia sim, dia não (a cada 3 dias) às 08:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consulta leve na tabela inscricoes
+        run: |
+          curl -sS -o /dev/null -w "HTTP %{http_code}\n" \
+            "${SUPABASE_URL}/rest/v1/inscricoes?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
