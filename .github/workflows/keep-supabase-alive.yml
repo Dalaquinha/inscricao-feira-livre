@@ -5,7 +5,7 @@ name: Manter Supabase ativo
 # sem requisições). Também pode ser disparado manualmente pela aba "Actions".
 on:
   schedule:
-    - cron: '0 8 */3 * *'   # todo dia sim, dia não (a cada 3 dias) às 08:00 UTC
+        - cron: '17 3 * * *'   # todo dia, às 03:17 UTC (fora da hora cheia, evita atraso do GitHub)
   workflow_dispatch: {}
 
 jobs:
